@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Carteiro;
+using Carteiro.Api;
 using Carteiro.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -23,6 +25,10 @@ builder.Services.AddDbContextFactory<CarteiroDbContext>((services, options) =>
     options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
 });
 
+builder.Services.AddProblemDetails();
+builder.Services.ConfigureHttpJsonOptions(json =>
+    json.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 var app = builder.Build();
 
 if (app.Services.GetRequiredService<IOptions<CarteiroOptions>>().Value.Database.MigrateOnStartup)
@@ -30,6 +36,12 @@ if (app.Services.GetRequiredService<IOptions<CarteiroOptions>>().Value.Database.
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<CarteiroDbContext>().Database.MigrateAsync();
 }
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
+var api = app.MapGroup(string.Empty).AddEndpointFilter<ApiKeyFilter>();
+api.MapEndpointsApi();
 
 app.Run();
 
