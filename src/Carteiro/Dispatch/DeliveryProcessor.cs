@@ -26,6 +26,7 @@ internal sealed record ClaimedDelivery(Guid DeliveryId, Guid EndpointId, Guid Lo
 internal sealed partial class DeliveryProcessor(
     IDbContextFactory<CarteiroDbContext> dbContextFactory,
     WebhookSender sender,
+    DeliveryMetrics metrics,
     IOptions<CarteiroOptions> options,
     TimeProvider time,
     ILogger<DeliveryProcessor> logger)
@@ -207,6 +208,8 @@ internal sealed partial class DeliveryProcessor(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+        metrics.AttemptRecorded(outcome, delivery.Status);
+
         if (outcome.Succeeded)
         {
             Log.DeliverySucceeded(logger, delivery.Id, attempt.AttemptNumber, attempt.StatusCode, attempt.DurationMs);
@@ -222,6 +225,7 @@ internal sealed partial class DeliveryProcessor(
 
         if (endpointDisabled)
         {
+            metrics.EndpointDisabled();
             Log.EndpointDisabled(logger, claimed.EndpointId, _delivery.EndpointFailureThreshold);
         }
 

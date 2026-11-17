@@ -32,6 +32,7 @@ builder.Services
         WebhookHttpHandler.Create(services.GetRequiredService<IOptions<CarteiroOptions>>().Value.Delivery))
     .ConfigureHttpClient(client => client.Timeout = Timeout.InfiniteTimeSpan); // WebhookSender applies its own timeout
 builder.Services.AddSingleton<WebhookSender>();
+builder.Services.AddSingleton<DeliveryMetrics>();
 builder.Services.AddSingleton<DeliveryProcessor>();
 builder.Services.AddHostedService<DeliveryWorker>();
 
