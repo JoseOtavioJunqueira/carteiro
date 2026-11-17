@@ -1,0 +1,56 @@
+# Local demo: Carteiro, PostgreSQL and a sample receiver.
+#
+#   cp .env.example .env    # optional, the defaults below work as-is
+#   docker compose up --build
+#
+# Retry timings are shortened so a failing delivery goes dead in about a minute
+# instead of hours. Do not copy them into a real deployment.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: carteiro
+      POSTGRES_USER: carteiro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carteiro}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carteiro -d carteiro"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${CARTEIRO_PORT:-8080}:8080"
+    environment:
+      ConnectionStrings__Carteiro: Host=postgres;Database=carteiro;Username=carteiro;Password=${POSTGRES_PASSWORD:-carteiro}
+      Carteiro__ApiKeys__0: ${CARTEIRO_API_KEY:-dev-api-key}
+      Carteiro__Database__MigrateOnStartup: "true"
+      # The receiver lives on the compose network, at a private address. Without this flag the
+      # SSRF guard would (correctly) refuse to deliver to it.
+      Carteiro__Delivery__AllowPrivateNetworks: "true"
+      Carteiro__Delivery__MaxAttempts: "4"
+      Carteiro__Delivery__BaseDelay: "00:00:05"
+      Carteiro__Delivery__MaxDelay: "00:00:20"
+      Carteiro__Delivery__RequestTimeout: "00:00:05"
+      Carteiro__Delivery__EndpointFailureThreshold: "10"
+
+  receiver:
+    build:
+      context: .
+      dockerfile: samples/Receiver/Dockerfile
+    ports:
+      - "${RECEIVER_PORT:-8081}:8080"
+    environment:
+      RECEIVER_SECRET: ${RECEIVER_SECRET:-whsec_demo_secret_change_me}
+
+volumes:
+  postgres-data:
