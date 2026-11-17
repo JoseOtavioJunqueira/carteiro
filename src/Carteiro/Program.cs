@@ -3,6 +3,7 @@ using Carteiro;
 using Carteiro.Api;
 using Carteiro.Data;
 using Carteiro.Dispatch;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -36,6 +37,11 @@ builder.Services.AddSingleton<DeliveryMetrics>();
 builder.Services.AddSingleton<DeliveryProcessor>();
 builder.Services.AddHostedService<DeliveryWorker>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<CarteiroDbContext>("database", tags: ["ready"]);
+
+builder.Services.AddOpenApi(openApi => openApi.AddDocumentTransformer<ApiKeySecuritySchemeTransformer>());
+
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(json =>
     json.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -50,6 +56,14 @@ if (app.Services.GetRequiredService<IOptions<CarteiroOptions>>().Value.Database.
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+// Unauthenticated on purpose: orchestrators and load balancers call these.
+// Liveness says the process is up; readiness also checks the database.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
+
+// The OpenAPI document describes the API but contains no data, so it is public too.
+app.MapOpenApi("/openapi/{documentName}.json");
 
 var api = app.MapGroup(string.Empty).AddEndpointFilter<ApiKeyFilter>();
 api.MapEndpointsApi();
