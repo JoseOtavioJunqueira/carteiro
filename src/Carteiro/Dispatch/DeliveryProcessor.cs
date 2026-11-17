@@ -283,7 +283,7 @@ internal sealed partial class DeliveryProcessor(
         [LoggerMessage(Level = LogLevel.Information, Message = "Delivery {DeliveryId} succeeded on attempt {Attempt} with HTTP {StatusCode} in {DurationMs} ms")]
         public static partial void DeliverySucceeded(ILogger logger, Guid deliveryId, int attempt, int? statusCode, int durationMs);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "Delivery {DeliveryId} failed on attempt {Attempt}: {Error}. Next attempt at {NextAttemptAt}")]
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Delivery {DeliveryId} failed on attempt {Attempt}: {Error} Next attempt at {NextAttemptAt}")]
         public static partial void DeliveryFailed(ILogger logger, Guid deliveryId, int attempt, string? error, DateTimeOffset? nextAttemptAt);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Delivery {DeliveryId} is dead after {Attempt} attempts: {Error}")]
