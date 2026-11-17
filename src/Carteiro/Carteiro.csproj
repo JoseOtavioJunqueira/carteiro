@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Carteiro</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Carteiro.UnitTests" />
+    <InternalsVisibleTo Include="Carteiro.IntegrationTests" />
+  </ItemGroup>
+
+</Project>
