@@ -123,7 +123,9 @@ public sealed class CarteiroFixture : IAsyncLifetime
         await db.Database.ExecuteSqlRawAsync("TRUNCATE endpoints, events, deliveries, delivery_attempts");
 
         Receiver.Reset();
-        Time.SetUtcNow(DateTimeOffset.UtcNow);
+
+        // The clock is not reset: FakeTimeProvider only moves forward, and no test depends on
+        // absolute time, only on how much it advances.
     }
 
     /// <summary>Runs processor rounds until nothing due is left.</summary>
