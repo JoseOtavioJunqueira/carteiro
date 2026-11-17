@@ -42,6 +42,7 @@ app.UseStatusCodePages();
 
 var api = app.MapGroup(string.Empty).AddEndpointFilter<ApiKeyFilter>();
 api.MapEndpointsApi();
+api.MapEventsApi();
 
 app.Run();
 
