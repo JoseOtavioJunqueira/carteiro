@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Carteiro;
 using Carteiro.Api;
 using Carteiro.Data;
+using Carteiro.Dispatch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -24,6 +25,15 @@ builder.Services.AddDbContextFactory<CarteiroDbContext>((services, options) =>
 
     options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
 });
+
+builder.Services
+    .AddHttpClient(WebhookSender.HttpClientName)
+    .ConfigurePrimaryHttpMessageHandler(services =>
+        WebhookHttpHandler.Create(services.GetRequiredService<IOptions<CarteiroOptions>>().Value.Delivery))
+    .ConfigureHttpClient(client => client.Timeout = Timeout.InfiniteTimeSpan); // WebhookSender applies its own timeout
+builder.Services.AddSingleton<WebhookSender>();
+builder.Services.AddSingleton<DeliveryProcessor>();
+builder.Services.AddHostedService<DeliveryWorker>();
 
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(json =>
